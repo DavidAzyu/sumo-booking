@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Bus,
   MapPin,
@@ -20,7 +20,15 @@ import {
   ShieldCheck,
   Timer,
   Star,
+  QrCode,
+  MessageCircle,
 } from "lucide-react";
+
+const CONFIG = {
+  UPI_ID: "doctorazyu@oksbi",
+  WHATSAPP_NUMBER: "919362600601",
+  YOUR_NAME: "Saiha Sumo Service",
+};
 
 type Amenity = "AC" | "Charging" | "Pushback" | "Water";
 
@@ -164,6 +172,13 @@ export default function App() {
   const [showSuccess, setShowSuccess] = useState<Booking | null>(null);
   const [swapTick, setSwapTick] = useState(0);
 
+  // CONFIG editable state
+  const [upiId, setUpiId] = useState(CONFIG.UPI_ID);
+  const [whatsappNumber, setWhatsappNumber] = useState(CONFIG.WHATSAPP_NUMBER);
+  const [yourName, setYourName] = useState(CONFIG.YOUR_NAME);
+  const [pendingBookingId, setPendingBookingId] = useState("");
+  const [showQr, setShowQr] = useState(true);
+
   // admin add form
   const [newSumoName, setNewSumoName] = useState("");
   const [newSumoFare, setNewSumoFare] = useState("700");
@@ -177,7 +192,6 @@ export default function App() {
       const routeMatch =
         (s.from === from && s.to === to) ||
         (s.from === to && s.to === from && from !== to);
-      // For demo, if same from-to, show matching; if user keeps default Saiha->Aizawl, show Saiha->Aizawl only
       if (from === "Saiha" && to === "Aizawl") return s.from === "Saiha" && s.to === "Aizawl";
       if (from === "Aizawl" && to === "Saiha") return s.from === "Aizawl" && s.to === "Saiha";
       return routeMatch;
@@ -210,10 +224,34 @@ export default function App() {
 
   const totalFarePreview = selectedSumo ? selectedSumo.fare * passengers : 0;
 
+  // Generate pending booking id when modal opens
+  useEffect(() => {
+    if (selectedSumo) {
+      const newId = `B-${Math.floor(1000 + Math.random() * 9000)}`;
+      setPendingBookingId(newId);
+      setShowQr(true);
+    } else {
+      setPendingBookingId("");
+    }
+  }, [selectedSumo]);
+
+  const upiLink = useMemo(() => {
+    if (!selectedSumo || !pendingBookingId) return "";
+    const amount = selectedSumo.fare * passengers;
+    const tn = `Sumo Booking ${pendingBookingId} ${from} to ${to}`;
+    return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(yourName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(tn)}`;
+  }, [selectedSumo, pendingBookingId, upiId, yourName, from, to, passengers]);
+
+  const qrUrl = useMemo(() => {
+    if (!upiLink) return "";
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
+  }, [upiLink]);
+
   const confirmBooking = () => {
     if (!selectedSumo || !custName || custPhone.length < 8) return;
+    const bookingId = pendingBookingId || `B-${Math.floor(1000 + Math.random() * 9000)}`;
     const newBooking: Booking = {
-      id: `B-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: bookingId,
       sumoId: selectedSumo.id,
       sumoName: selectedSumo.name,
       from,
@@ -238,6 +276,17 @@ export default function App() {
     setCustName("");
     setCustPhone("");
     setShowSuccess(newBooking);
+
+    // Auto open WhatsApp with booking details + UPI info
+    const waMessage = `*SUMO BOOKING - ${yourName}*\n\n*Booking ID:* ${newBooking.id}\n*Service:* ${newBooking.sumoName}\n*Route:* ${newBooking.from} → ${newBooking.to}\n*Date:* ${newBooking.date} | *Time:* ${newBooking.departure}\n*Passenger:* ${newBooking.customerName} (${newBooking.phone})\n*Seats:* ${newBooking.passengers} x ₹${newBooking.farePerSeat} = ₹${newBooking.totalFare}\n\n*Payment:* UPI Paid ₹${newBooking.totalFare} to ${upiId} (${yourName})\n*UPI Ref:* ${newBooking.id}\n*Status:* Paid & Confirmed - Please verify and confirm seat\n\nReporting: Siahatla Saiha Counter, 30 mins early.`;
+    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
+    setTimeout(() => {
+      window.open(waUrl, "_blank");
+    }, 400);
+  };
+
+  const handlePaidOnWhatsApp = () => {
+    confirmBooking();
   };
 
   const deleteSumo = (id: string) => {
@@ -450,7 +499,7 @@ export default function App() {
                           className="w-8 h-8 rounded-full bg-white border border-zinc-200 flex items-center justify-center font-bold hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
                           aria-label="Decrease passengers"
                         >
-                          −{passengers > 1 ? "" : ""}
+                          −
                         </button>
                         <div className="text-[18px] font-bold min-w-[20px] text-center" data-testid="pax-count">{passengers}</div>
                         <button
@@ -460,7 +509,7 @@ export default function App() {
                           className="w-8 h-8 rounded-full bg-[#123B6D] text-white flex items-center justify-center font-bold hover:bg-[#0E2F58] disabled:opacity-40"
                           aria-label="Increase passengers"
                         >
-                          +{passengers}
+                          +
                         </button>
                       </div>
                     </div>
@@ -649,7 +698,7 @@ export default function App() {
                     <div className="bg-[#F5F7FA] rounded-[12px] p-3"><div className="text-[11px] text-zinc-400 font-bold uppercase">Passenger</div><div className="font-semibold mt-1">{b.customerName}</div><div className="text-zinc-500 text-[12px]">{b.phone}</div></div>
                     <div className="bg-[#F5F7FA] rounded-[12px] p-3"><div className="text-[11px] text-zinc-400 font-bold uppercase">Seats</div><div className="font-semibold mt-1">{b.passengers} seat{b.passengers>1?"s":""}</div><div className="text-zinc-500 text-[12px]">₹{b.farePerSeat} x {b.passengers}</div></div>
                     <div className="bg-[#F5F7FA] rounded-[12px] p-3"><div className="text-[11px] text-zinc-400 font-bold uppercase">Total Paid</div><div className="font-extrabold text-[#123B6D] mt-1 text-[16px]">₹{b.totalFare}</div><div className="text-zinc-500 text-[12px]">{b.bookedAt}</div></div>
-                    <div className="bg-[#123B6D] rounded-[12px] p-3 text-white"><div className="text-[11px] text-white/60 font-bold uppercase">Copy Ticket</div><button onClick={() => navigator.clipboard?.writeText(`SUMO TICKET ${b.id}\n${b.sumoName}\n${b.from} → ${b.to} ${b.date} ${b.departure}\n${b.customerName} ${b.phone}\nSeats: ${b.passengers} Total: ₹${b.totalFare}\nCounter: Siahatla Saiha`)} className="mt-1 text-[12px] font-semibold underline decoration-white/40">Copy details</button></div>
+                    <div className="bg-[#123B6D] rounded-[12px] p-3 text-white"><div className="text-[11px] text-white/60 font-bold uppercase">Copy Ticket</div><button onClick={() => navigator.clipboard?.writeText(`SUMO TICKET ${b.id}\n${b.sumoName}\n${b.from} → ${b.to} ${b.date} ${b.departure}\n${b.customerName} ${b.phone}\nSeats: ${b.passengers} Total: ₹${b.totalFare}\nCounter: Siahatla Saiha\nUPI Paid to ${upiId}`)} className="mt-1 text-[12px] font-semibold underline decoration-white/40">Copy details</button></div>
                   </div>
                 </div>
               ))
@@ -663,55 +712,89 @@ export default function App() {
           <div className="flex items-end justify-between gap-4 mb-6">
             <div>
               <h2 className="display text-[26px] font-bold tracking-tight">Admin Panel</h2>
-              <p className="text-[13px] text-zinc-500 mt-1">Manage Sumos & bookings — changes live for this session only</p>
+              <p className="text-[13px] text-zinc-500 mt-1">Manage Sumos, bookings & payments — changes live for this session only</p>
             </div>
             <button onClick={() => setView("home")} className="px-4 py-2 rounded-full bg-white border border-zinc-200 text-[13px] font-semibold">← Exit admin</button>
           </div>
 
           <div className="grid lg:grid-cols-[380px_1fr] gap-6 items-start">
-            {/* Add sumo */}
-            <div className="bg-white rounded-[20px] border border-zinc-100 p-5 shadow-[0_8px_24px_-16px_rgba(0,0,0,0.2)]">
-              <div className="font-bold flex items-center gap-2"><Plus size={16} className="text-[#123B6D]" /> Add New Sumo</div>
-              <div className="mt-4 grid gap-3">
-                <div>
-                  <div className="text-[11px] font-bold uppercase text-zinc-400">Sumo / Service Name</div>
-                  <input value={newSumoName} onChange={(e) => setNewSumoName(e.target.value)} placeholder="e.g. Chhimtuipui Express" className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none focus:border-[#123B6D]/30" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+            {/* Left column */}
+            <div className="grid gap-6">
+              {/* Payment Settings */}
+              <div className="bg-white rounded-[20px] border border-zinc-100 p-5 shadow-[0_8px_24px_-16px_rgba(0,0,0,0.2)]">
+                <div className="font-bold flex items-center gap-2"><QrCode size={16} className="text-[#123B6D]" /> Payment Settings</div>
+                <p className="text-[11px] text-zinc-500 mt-1">Editable UPI & WhatsApp — used for QR and auto message</p>
+                <div className="mt-4 grid gap-3">
                   <div>
-                    <div className="text-[11px] font-bold uppercase text-zinc-400">From</div>
-                    <select value={newSumoFrom} onChange={(e) => setNewSumoFrom(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none">
-                      <option>Saiha</option><option>Aizawl</option>
-                    </select>
+                    <div className="text-[11px] font-bold uppercase text-zinc-400">UPI ID (pa)</div>
+                    <input value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="doctorazyu@oksbi" className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] font-mono outline-none focus:border-[#123B6D]/30 focus:bg-white transition" />
+                    <div className="text-[10px] text-zinc-400 mt-1">Example: yourname@oksbi / @ybl / @paytm</div>
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold uppercase text-zinc-400">To</div>
-                    <select value={newSumoTo} onChange={(e) => setNewSumoTo(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none">
-                      <option>Aizawl</option><option>Saiha</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-[11px] font-bold uppercase text-zinc-400">Departure</div>
-                    <input value={newSumoTime} onChange={(e) => setNewSumoTime(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none" />
+                    <div className="text-[11px] font-bold uppercase text-zinc-400">Business Name (pn)</div>
+                    <input value={yourName} onChange={(e) => setYourName(e.target.value)} placeholder="Saiha Sumo Service" className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold outline-none focus:border-[#123B6D]/30 focus:bg-white transition" />
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold uppercase text-zinc-400">Fare (₹)</div>
-                    <input value={newSumoFare} onChange={(e) => setNewSumoFare(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none" />
+                    <div className="text-[11px] font-bold uppercase text-zinc-400">WhatsApp Number (with country code)</div>
+                    <input value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} placeholder="919362600601" className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] font-mono outline-none focus:border-[#123B6D]/30 focus:bg-white transition" />
+                    <div className="text-[10px] text-zinc-400 mt-1">No + or spaces. Will open wa.me/{whatsappNumber}</div>
+                  </div>
+                  <div className="mt-2 bg-[#F0F5FF] border border-[#D6E4FF] rounded-[12px] p-3">
+                    <div className="text-[11px] font-bold text-[#123B6D] uppercase flex items-center gap-1"><MessageCircle size={12} /> Preview UPI Link</div>
+                    <div className="mt-1 text-[10px] font-mono text-[#123B6D] break-all leading-[1.4]">upi://pay?pa={upiId}&pn={encodeURIComponent(yourName)}&am=700&cu=INR&tn=Sumo Booking</div>
+                    <div className="mt-2 flex gap-2">
+                      <a href={`upi://pay?pa=${upiId}&pn=${encodeURIComponent(yourName)}&am=700&cu=INR&tn=Test`} className="text-[11px] bg-[#123B6D] text-white px-3 py-1.5 rounded-full font-semibold">Test UPI App</a>
+                      <a href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi ${yourName}, test booking`)}`} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-white border border-zinc-200 px-3 py-1.5 rounded-full font-semibold">Test WhatsApp</a>
+                    </div>
                   </div>
                 </div>
-                <button onClick={addSumo} className="mt-2 h-[44px] rounded-[12px] bg-[#123B6D] text-white font-bold text-[14px]">Add Sumo to List</button>
-                <div className="text-[11px] text-zinc-500">Tip: All changes reset on page refresh — this is a frontend demo without backend.</div>
               </div>
 
-              <div className="mt-8">
-                <div className="font-bold text-[14px]">Saiha Counter Info</div>
-                <div className="mt-2 text-[13px] text-zinc-600 leading-[1.6] bg-[#F5F7FA] rounded-[12px] p-3 border border-zinc-100">
-                  <div><b>Address:</b> Siahatla, Saiha - 796901, Near DC Office</div>
-                  <div><b>Phone:</b> 9862-xxx-xxx / 8974-xxx-xxx</div>
-                  <div><b>Reporting:</b> 30 mins before departure</div>
-                  <div><b>Aizawl Drop:</b> Zemabawk / Khatla / Vaivakawn</div>
+              {/* Add sumo */}
+              <div className="bg-white rounded-[20px] border border-zinc-100 p-5 shadow-[0_8px_24px_-16px_rgba(0,0,0,0.2)]">
+                <div className="font-bold flex items-center gap-2"><Plus size={16} className="text-[#123B6D]" /> Add New Sumo</div>
+                <div className="mt-4 grid gap-3">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase text-zinc-400">Sumo / Service Name</div>
+                    <input value={newSumoName} onChange={(e) => setNewSumoName(e.target.value)} placeholder="e.g. Chhimtuipui Express" className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none focus:border-[#123B6D]/30" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[11px] font-bold uppercase text-zinc-400">From</div>
+                      <select value={newSumoFrom} onChange={(e) => setNewSumoFrom(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none">
+                        <option>Saiha</option><option>Aizawl</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold uppercase text-zinc-400">To</div>
+                      <select value={newSumoTo} onChange={(e) => setNewSumoTo(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none">
+                        <option>Aizawl</option><option>Saiha</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[11px] font-bold uppercase text-zinc-400">Departure</div>
+                      <input value={newSumoTime} onChange={(e) => setNewSumoTime(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold uppercase text-zinc-400">Fare (₹)</div>
+                      <input value={newSumoFare} onChange={(e) => setNewSumoFare(e.target.value)} className="mt-1 w-full bg-[#F5F7FA] border border-zinc-100 rounded-[12px] px-3 py-2.5 text-[14px] outline-none" />
+                    </div>
+                  </div>
+                  <button onClick={addSumo} className="mt-2 h-[44px] rounded-[12px] bg-[#123B6D] text-white font-bold text-[14px]">Add Sumo to List</button>
+                  <div className="text-[11px] text-zinc-500">Tip: All changes reset on page refresh — this is a frontend demo without backend.</div>
+                </div>
+
+                <div className="mt-8">
+                  <div className="font-bold text-[14px]">Saiha Counter Info</div>
+                  <div className="mt-2 text-[13px] text-zinc-600 leading-[1.6] bg-[#F5F7FA] rounded-[12px] p-3 border border-zinc-100">
+                    <div><b>Address:</b> Siahatla, Saiha - 796901, Near DC Office</div>
+                    <div><b>Phone:</b> 9862-xxx-xxx / 8974-xxx-xxx</div>
+                    <div><b>Reporting:</b> 30 mins before departure</div>
+                    <div><b>Aizawl Drop:</b> Zemabawk / Khatla / Vaivakawn</div>
+                    <div className="mt-2 pt-2 border-t border-zinc-200"><b>UPI:</b> {upiId}<br/><b>WhatsApp:</b> +{whatsappNumber}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -762,14 +845,14 @@ export default function App() {
       {selectedSumo && (
         <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center p-0 md:p-6">
           <div className="absolute inset-0 bg-[#0A1E3A]/70 backdrop-blur-[6px]" onClick={() => setSelectedSumo(null)} />
-          <div className="relative w-full md:max-w-[520px] bg-white rounded-t-[24px] md:rounded-[24px] shadow-[0_24px_64px_-16px_rgba(0,0,0,0.5)] border border-white overflow-hidden animate-[in_.25s_ease]">
-            <div className="h-1 w-full bg-[#123B6D]" />
+          <div className="relative w-full md:max-w-[560px] bg-white rounded-t-[24px] md:rounded-[24px] shadow-[0_24px_64px_-16px_rgba(0,0,0,0.5)] border border-white overflow-hidden animate-[in_.25s_ease] max-h-[92vh] md:max-h-[90vh] overflow-y-auto">
+            <div className="h-1 w-full bg-[#123B6D] sticky top-0 z-10" />
             <div className="p-5 md:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[11px] font-bold tracking-wide text-[#123B6D] uppercase">Confirm your sumo</div>
                   <div className="font-extrabold text-[18px] leading-tight mt-1">{selectedSumo.name}</div>
-                  <div className="text-[13px] text-zinc-500 mt-1">{from} → {to} • {date} • {selectedSumo.departure} • {selectedSumo.number}</div>
+                  <div className="text-[13px] text-zinc-500 mt-1">{from} → {to} • {date} • {selectedSumo.departure} • {selectedSumo.number} • <span className="font-mono text-[11px] bg-zinc-100 px-1.5 py-0.5 rounded">{pendingBookingId}</span></div>
                 </div>
                 <button onClick={() => setSelectedSumo(null)} className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center"><X size={16} /></button>
               </div>
@@ -804,14 +887,68 @@ export default function App() {
                 </div>
               </div>
 
+              {/* UPI PAYMENT SECTION */}
+              <div className="mt-6 border border-[#D6E4FF] rounded-[16px] overflow-hidden bg-[#F8FAFF]">
+                <button onClick={() => setShowQr(!showQr)} className="w-full flex items-center justify-between p-4 text-left">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-[10px] bg-[#123B6D] text-white flex items-center justify-center"><QrCode size={18} /></div>
+                    <div>
+                      <div className="font-bold text-[14px] text-[#123B6D] flex items-center gap-1.5">UPI Payment <span className="bg-[#123B6D] text-white text-[10px] px-1.5 py-0.5 rounded-full">Required</span></div>
+                      <div className="text-[11px] text-zinc-500">Scan QR or pay via UPI app • {upiId}</div>
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-bold text-[#123B6D] bg-white border border-[#D6E4FF] px-2.5 py-1 rounded-full">{showQr ? "Hide" : "Show QR"}</div>
+                </button>
+
+                {showQr && (
+                  <div className="px-4 pb-4 grid md:grid-cols-[160px_1fr] gap-4 items-start">
+                    <div className="bg-white rounded-[14px] border border-zinc-100 p-2.5 flex flex-col items-center">
+                      {qrUrl ? (
+                        <img src={qrUrl} alt="UPI QR" className="w-[150px] h-[150px] rounded-[8px]" />
+                      ) : (
+                        <div className="w-[150px] h-[150px] bg-zinc-100 rounded-[8px] flex items-center justify-center text-zinc-400"><QrCode size={28} /></div>
+                      )}
+                      <div className="mt-2 text-[10px] font-mono text-zinc-500 text-center break-all">₹{totalFarePreview} → {upiId}</div>
+                      <div className="mt-1 text-[10px] text-[#0F6D2E] font-bold bg-[#E6F4EA] px-2 py-0.5 rounded-full border border-[#C7E8CF]">Scan with any UPI App</div>
+                    </div>
+
+                    <div className="grid gap-3">
+                      <div className="bg-white rounded-[12px] border border-zinc-100 p-3">
+                        <div className="text-[11px] font-bold uppercase text-zinc-400">Pay to</div>
+                        <div className="font-bold text-[14px] mt-1 flex items-center gap-2">{yourName} <span className="text-[11px] font-mono bg-[#F0F5FF] text-[#123B6D] px-2 py-0.5 rounded-full border border-[#D6E4FF]">{upiId}</span></div>
+                        <div className="text-[12px] mt-2 grid grid-cols-2 gap-2">
+                          <div><span className="text-zinc-400">Amount:</span> <b className="text-[#123B6D]">₹{totalFarePreview}</b></div>
+                          <div><span className="text-zinc-400">Booking:</span> <b>{pendingBookingId}</b></div>
+                          <div className="col-span-2 text-[11px] text-zinc-500 mt-1 break-all">UPI Link: {upiLink.slice(0, 80)}...</div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
+                        <a
+                          href={upiLink}
+                          className="h-[44px] rounded-[12px] bg-[#0F6D2E] hover:bg-[#0C5A26] text-white font-bold text-[13px] flex items-center justify-center gap-2 transition shadow-[0_8px_16px_-8px_rgba(15,109,46,0.5)]"
+                        >
+                          <Zap size={16} /> Pay via UPI App — ₹{totalFarePreview}
+                        </a>
+                        <div className="text-[11px] text-center text-zinc-500">GPay, PhonePe, Paytm, BHIM will open with amount pre-filled</div>
+                      </div>
+
+                      <div className="text-[11px] text-zinc-500 leading-[1.5] bg-[#FFF7CC] border border-[#FFE99A] rounded-[10px] p-2.5">
+                        <b>Steps:</b> 1) Pay ₹{totalFarePreview} using QR or UPI App 2) Click "I have Paid" below — this will confirm booking and open WhatsApp to send receipt to <b>+{whatsappNumber}</b>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
-                onClick={confirmBooking}
+                onClick={handlePaidOnWhatsApp}
                 disabled={!custName || custPhone.length < 8}
-                className="mt-5 w-full h-[52px] rounded-[14px] bg-[#123B6D] disabled:bg-zinc-200 disabled:text-zinc-400 text-white font-extrabold text-[15px] tracking-wide shadow-[0_12px_24px_-10px_rgba(18,59,109,0.7)] transition flex items-center justify-center gap-2"
+                className="mt-5 w-full h-[52px] rounded-[14px] bg-[#123B6D] disabled:bg-zinc-200 disabled:text-zinc-400 text-white font-extrabold text-[14px] tracking-wide shadow-[0_12px_24px_-10px_rgba(18,59,109,0.7)] transition flex items-center justify-center gap-2"
               >
-                <ShieldCheck size={18} /> CONFIRM & PAY ₹{totalFarePreview}
+                <MessageCircle size={18} /> I have Paid - Confirm on WhatsApp • ₹{totalFarePreview}
               </button>
-              <div className="mt-3 text-[11px] text-center text-zinc-500">Secure booking • Free cancellation up to 6 hours • Pay at counter option available</div>
+              <div className="mt-3 text-[11px] text-center text-zinc-500">Secure UPI booking • Auto WhatsApp to +{whatsappNumber} • Free cancellation up to 6 hours</div>
             </div>
           </div>
         </div>
@@ -824,7 +961,7 @@ export default function App() {
           <div className="relative w-full md:max-w-[480px] bg-white rounded-t-[24px] md:rounded-[24px] shadow-[0_24px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden text-center p-7">
             <div className="w-14 h-14 rounded-full bg-[#E6F4EA] border border-[#C7E8CF] flex items-center justify-center mx-auto text-[#0F6D2E]"><Check size={28} /></div>
             <div className="mt-4 font-extrabold text-[22px] tracking-tight">Booking Confirmed!</div>
-            <div className="mt-1 text-[13px] text-zinc-500">Your Saiha ↔ Aizawl Sumo ticket is ready</div>
+            <div className="mt-1 text-[13px] text-zinc-500">Your Saiha ↔ Aizawl Sumo ticket is ready • WhatsApp opened</div>
             <div className="mt-5 bg-[#F5F7FA] rounded-[16px] p-4 text-left border border-zinc-100">
               <div className="font-bold text-[14px]">{showSuccess.sumoName}</div>
               <div className="text-[12px] text-zinc-500 mt-1">{showSuccess.from} → {showSuccess.to} • {showSuccess.date} • {showSuccess.departure}</div>
@@ -833,13 +970,14 @@ export default function App() {
                 <div><span className="text-zinc-400">Passengers:</span> <b>{showSuccess.passengers}</b></div>
                 <div><span className="text-zinc-400">Total:</span> <b className="text-[#123B6D]">₹{showSuccess.totalFare}</b></div>
                 <div><span className="text-zinc-400">Phone:</span> <b>{showSuccess.phone}</b></div>
+                <div className="col-span-2 mt-1 pt-2 border-t border-zinc-200 text-[11px]"><span className="text-zinc-400">UPI Paid to:</span> <b className="font-mono">{upiId}</b> • <span className="text-[#0F6D2E] font-semibold">WhatsApp sent to +{whatsappNumber}</span></div>
               </div>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <button onClick={() => { setShowSuccess(null); setView("bookings"); }} className="h-[44px] rounded-[12px] bg-[#123B6D] text-white font-bold text-[13px]">View My Bookings</button>
               <button onClick={() => setShowSuccess(null)} className="h-[44px] rounded-[12px] bg-zinc-100 text-zinc-800 font-bold text-[13px]">Book Another</button>
             </div>
-            <div className="mt-3 text-[11px] text-zinc-500">Reporting: Siahatla Saiha Counter • 30 mins early • Copy ticket from My Bookings</div>
+            <div className="mt-3 text-[11px] text-zinc-500">If WhatsApp didn't open, copy ticket and message manually to +{whatsappNumber}</div>
           </div>
         </div>
       )}
@@ -852,7 +990,7 @@ export default function App() {
               <div className="w-8 h-8 rounded-[10px] bg-[#123B6D] flex items-center justify-center text-white"><Bus size={16} /></div>
               <div className="font-extrabold text-[14px] text-[#123B6D]">SUMO BOOKING</div>
             </div>
-            <div className="text-[12px] text-zinc-500 mt-3 leading-[1.6]">Daily trusted Sumo service connecting Saiha District & Aizawl. Safe drivers, verified vehicles, fixed fares.</div>
+            <div className="text-[12px] text-zinc-500 mt-3 leading-[1.6]">Daily trusted Sumo service connecting Saiha District & Aizawl. Safe drivers, verified vehicles, fixed fares. UPI: {upiId}</div>
           </div>
           <div>
             <div className="font-bold text-[13px]">Saiha Counter</div>
@@ -866,7 +1004,7 @@ export default function App() {
           </div>
           <div>
             <div className="font-bold text-[13px]">Travel Info</div>
-            <div className="text-[12px] text-zinc-500 mt-2 leading-[1.7]">• 378km • 10-11h journey<br/>• 10 seater Sumo (2+3+3+2)<br/>• Luggage: 15kg free<br/>• Road: Lawngtlai - Lunglei - Aizawl</div>
+            <div className="text-[12px] text-zinc-500 mt-2 leading-[1.7]">• 378km • 10-11h journey<br/>• 10 seater Sumo (2+3+3+2)<br/>• Luggage: 15kg free<br/>• UPI: {upiId}<br/>• WhatsApp: +{whatsappNumber}</div>
           </div>
         </div>
         <div className="border-t border-zinc-100 py-4 text-center text-[11px] text-zinc-400">
