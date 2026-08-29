@@ -172,14 +172,31 @@ export default function App(){
                 <>
                   <h3 className="font-bold text-lg mb-1">Choose your Sumo & Seat</h3>
                   <p className="text-sm text-gray-500 mb-5">Selected: <b className="text-black">{selectedSumo.id}</b> • {selectedSumo.route} • {selectedSumo.time} • Driver {selectedSumo.driver}</p>
-                  <div className="bg-[#f8fafc] border rounded-[22px] p-5">
-                    <div className="flex justify-between text-[11px] font-bold tracking-widest text-gray-400 mb-4"><span>DRIVER CABIN</span><span>{selectedSumo.bookedSeats.length} BOOKED / {selectedSumo.totalSeats} TOTAL</span></div>
-                    <div className="flex gap-3 mb-3"><div className="w-[64px] h-12 rounded-xl bg-black text-white flex flex-col items-center justify-center text-[9px] leading-none font-bold"><span>●</span><span>DRIVER</span></div>
-                      {[1,2].map(n=>{ const b=selectedSumo.bookedSeats.includes(n); return <button disabled={b} key={n} onClick={()=>toggleSeat(n)} className={`flex-1 h-12 rounded-xl font-bold border-2 transition-all ${b ? 'bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed' : selectedSeats.includes(n) ? 'bg-black text-white border-black scale-[1.02] shadow-lg' : 'bg-white border-gray-200 hover:border-black'}`}>{b?'✕':n}<span className="block text-[8px] font-normal opacity-60">{getSeatPos(n)}</span></button>})}
+                  <div className="bg-[#f8fafc] border-2 border-black rounded-[22px] p-5 shadow-inner">
+                    <div className="flex justify-between items-center mb-4"><span className="text-[11px] font-extrabold tracking-widest bg-black text-white px-3 py-1 rounded-full">🚐 SUMO SEAT MAP - {selectedSumo.id}</span><span className="text-[11px] font-bold">{selectedSumo.bookedSeats.length} BOOKED / {selectedSumo.totalSeats} TOTAL • {selectedSumo.totalSeats - selectedSumo.bookedSeats.length} FREE</span></div>
+                    
+                    <div className="bg-white rounded-2xl border p-3 mb-3">
+                      <p className="text-[10px] font-bold tracking-widest text-gray-400 mb-2">FRONT ROW (Best View)</p>
+                      <div className="flex gap-3">
+                        <div className="w-[72px] h-[60px] rounded-xl bg-[#0f172a] text-white flex flex-col items-center justify-center text-[10px] leading-none font-bold"><span className="text-lg">●</span><span>DRIVER</span><span className="text-[7px] opacity-60">{selectedSumo.driver.split(' ')[0]}</span></div>
+                        {[1,2].map(n=>{ const b=selectedSumo.bookedSeats.includes(n); const sel=selectedSeats.includes(n); return <button disabled={b} key={n} onClick={()=>toggleSeat(n)} className={`flex-1 h-[60px] rounded-xl font-extrabold border-2 transition-all relative overflow-hidden ${b ? 'bg-red-50 text-red-300 border-red-200 cursor-not-allowed' : sel ? 'bg-black text-white border-black scale-[1.03] shadow-xl' : 'bg-white border-gray-300 hover:border-black hover:shadow-md'}`}><span className="text-lg">{b?'✕':n}</span><span className="block text-[8px] font-bold mt-0.5">{getSeatPos(n)}</span>{sel && <span className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full"></span>}</button>})}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3 mb-3">{[3,4,5].map(n=>{ const b=selectedSumo.bookedSeats.includes(n); return <button disabled={b} key={n} onClick={()=>toggleSeat(n)} className={`h-[56px] rounded-xl font-bold border-2 ${b ? 'bg-gray-200 text-gray-400' : selectedSeats.includes(n) ? 'bg-black text-white border-black' : 'bg-white border-gray-200'}`}>{b?'✕':n}<span className="block text-[8px] font-normal">{getSeatPos(n)}</span></button>})}</div>
-                    <div className="grid grid-cols-5 gap-3">{[6,7,8,9,10].map(n=>{ const b=selectedSumo.bookedSeats.includes(n); return <button disabled={b} key={n} onClick={()=>toggleSeat(n)} className={`h-[56px] rounded-xl font-bold border-2 ${b ? 'bg-gray-200 text-gray-400' : selectedSeats.includes(n) ? 'bg-black text-white border-black' : 'bg-white border-gray-200'}`}>{b?'✕':n}</button>})}</div>
-                    <div className="flex gap-4 mt-5 text-[11px]"><span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-white border-2 border-gray-300 rounded"></span> Available</span><span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-black rounded"></span> Selected</span><span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-gray-200 rounded"></span> Booked</span></div>
+
+                    <div className="bg-white rounded-2xl border p-3 mb-3">
+                      <p className="text-[10px] font-bold tracking-widest text-gray-400 mb-2">MIDDLE ROW (Comfort)</p>
+                      <div className="grid grid-cols-3 gap-3">{[3,4,5].map(n=>{ const b=selectedSumo.bookedSeats.includes(n); const sel=selectedSeats.includes(n); return <button disabled={b} key={n} onClick={()=>toggleSeat(n)} className={`h-[64px] rounded-xl font-extrabold border-2 relative ${b ? 'bg-red-50 text-red-300 border-red-200' : sel ? 'bg-black text-white border-black shadow-lg' : 'bg-white border-gray-300 hover:border-black'}`}><span className="text-lg">{b?'✕':n}</span><span className="block text-[8px] mt-0.5">{getSeatPos(n)}</span>{sel && <span className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full"></span>}</button>})}</div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border p-3">
+                      <p className="text-[10px] font-bold tracking-widest text-gray-400 mb-2">REAR ROW (Group Travel)</p>
+                      <div className="grid grid-cols-5 gap-2.5">{[6,7,8,9,10].map(n=>{ const b=selectedSumo.bookedSeats.includes(n); const sel=selectedSeats.includes(n); return <button disabled={b} key={n} onClick={()=>toggleSeat(n)} className={`h-[56px] rounded-xl font-bold border-2 ${b ? 'bg-red-50 text-red-300 border-red-200' : sel ? 'bg-black text-white border-black' : 'bg-white border-gray-200 hover:border-black'}`}>{b?'✕':n}</button>})}</div>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-4">
+                      <div className="flex gap-3 text-[11px] font-bold"><span className="flex items-center gap-1.5"><span className="w-4 h-4 bg-white border-2 border-gray-300 rounded-lg"></span> Free</span><span className="flex items-center gap-1.5"><span className="w-4 h-4 bg-black rounded-lg"></span> Your Seat</span><span className="flex items-center gap-1.5"><span className="w-4 h-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center text-[8px]">✕</span> Booked</span></div>
+                      <span className="text-xs font-bold bg-yellow-400 text-black px-3 py-1 rounded-full">{selectedSeats.length ? `Selected: ${selectedSeats.map(s=>`Seat ${s}`).join(', ')}` : 'Select seats'}</span>
+                    </div>
                   </div>
                   <button disabled={selectedSeats.length===0} onClick={()=>setStep(2)} className={`w-full mt-5 p-4 rounded-2xl font-bold ${selectedSeats.length ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>Continue with {selectedSeats.length} seat{selectedSeats.length>1?'s':''} →</button>
                 </>
