@@ -53,7 +53,6 @@ export default function App(){
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [utr, setUtr] = useState('');
-  const [showPayment, setShowPayment] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [searchRoute, setSearchRoute] = useState('All');
@@ -89,7 +88,7 @@ export default function App(){
     const waMsg = `🚐 *SIAHA SUMO - BOOKING CONFIRMED*%0A%0A🆔 *ID:* ${bookingId}%0A🚐 *Sumo:* ${selectedSumo.id} - ${selectedSumo.vehicle}%0A👨‍✈️ *Driver:* ${selectedSumo.driver} (${selectedSumo.driverPhone})%0A📍 *Route:* ${selectedSumo.route}%0A📅 *Date:* ${selectedSumo.date} | ⏰ ${selectedSumo.time}%0A%0A💺 *SEATS:*%0A${seatLines}%0A${seatVisual}%0A%0A💰 *Total:* Rs.${total} (${selectedSeats.length} seats)%0A👤 *Passenger:* ${name}%0A📱 *Phone:* ${phone}%0A🏦 *UTR:* ${utr}%0A%0A✅ Confirm please!%0ASiaha One Stop - 9362600601`;
     window.open(`https://wa.me/919362600601?text=${waMsg}`,'_blank');
     alert(`✅ Booked! ${bookingId} Seats: ${selectedSeats.join(', ')}`);
-    setSelectedSeats([]); setShowPayment(false); setUtr(''); setStep(1);
+    setSelectedSeats([]); setUtr(''); setStep(1);
   };
 
   const addSumo = () => {
@@ -195,7 +194,7 @@ export default function App(){
                     <input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex: H. Lalrindika" className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-200 font-medium"/>
                     <label className="text-xs font-bold tracking-widest text-gray-400 mt-2">WHATSAPP NUMBER</label>
                     <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="98765 43210" className="w-full p-4 rounded-2xl bg-gray-50 border font-medium"/>
-                    <div className="flex gap-2 mt-4"><button onClick={()=>setStep(1)} className="flex-1 p-4 rounded-2xl bg-gray-100 font-bold">Back</button><button disabled={!name||!phone} onClick={()=>{ setStep(3); setShowPayment(true); }} className={`flex-1 p-4 rounded-2xl font-bold ${name&&phone ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>Proceed to Pay → ₹{total}</button></div>
+                    <div className="flex gap-2 mt-4"><button onClick={()=>setStep(1)} className="flex-1 p-4 rounded-2xl bg-gray-100 font-bold">Back</button><button disabled={!name||!phone} onClick={()=>{ setStep(3); /* payment shown via step */; }} className={`flex-1 p-4 rounded-2xl font-bold ${name&&phone ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>Proceed to Pay → ₹{total}</button></div>
                   </div>
                 </>
               )}
