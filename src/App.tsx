@@ -48,7 +48,7 @@ export default function App() {
 
   const total = selectedSeats.length * selectedSumo.fare;
   const upiLink = `upi://pay?pa=${upiId}&pn=SaihaSumo&am=${total}&cu=INR&tn=Booking-${selectedSumo.id}`;
-  const waText = `NEW BOOKING%0A${selectedSumo.from}->${selectedSumo.to}%0ASeats:${selectedSeats.join(",")}%0AAmount:₹${total}%0AName:${name}%0APhone:${phone}%0ABooking:${currentBookingId}%0AUTR:${utr}`;
+  const waText = `NEW BOOKING%0A${selectedSumo.from} to ${selectedSumo.to}%0ASeats:${selectedSeats.join(",")}%0AAmount:₹${total}%0AName:${name}%0APhone:${phone}%0ABooking:${currentBookingId}%0AUTR:${utr}`;
 
   const handleSeatToggle=(n:number)=>{
     if(selectedSumo.occupied.includes(n)) return;
@@ -105,7 +105,7 @@ export default function App() {
             <button onClick={()=>setShowConfig(true)} className="w-8 h-8 rounded-full bg-white/10 grid place-items-center"><Settings className="w-4 h-4"/></button>
           </div>
         </div>
-        {demoMode && <div className="bg-yellow-400 text-black text-center text-[11px] py-1 font-bold">Demo: Select Seat -> Scan QR / GPay -> Auto WhatsApp -> Ticket • Phone ah QR scan ngai lo!</div>}
+        {demoMode && <div className="bg-yellow-400 text-black text-center text-[11px] py-1 font-bold">Demo: Select Seat  to  Scan QR / GPay  to  Auto WhatsApp  to  Ticket • Phone ah QR scan ngai lo!</div>}
       </header>
 
       <main className="mx-auto max-w-[1180px] px-4 py-4 grid lg:grid-cols-[1.2fr_0.8fr] gap-4">
@@ -117,12 +117,12 @@ export default function App() {
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2"><span className="font-black text-lg">{sumo.time}</span><span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${sumo.status==="full"?"bg-red-500":"bg-emerald-400 text-black"}`}>{left} seats left</span></div>
-                    <div className="flex items-center gap-2 text-sm opacity-80"><MapPin className="w-3 h-3"/>{sumo.from} -> {sumo.to} • {sumo.driver}</div>
+                    <div className="flex items-center gap-2 text-sm opacity-80"><MapPin className="w-3 h-3"/>{sumo.from}  to  {sumo.to} • {sumo.driver}</div>
                   </div>
                   <div className="text-right"><div className="font-black text-xl">₹{sumo.fare}</div><div className="text-[10px] opacity-60">per seat</div></div>
                 </div>
                 <div className="mt-3 flex gap-1">{Array.from({length:10}).map((_,i)=>{ const n=i+1; const occ=sumo.occupied.includes(n); return <div key={n} className={`w-6 h-6 rounded-md grid place-items-center text-[9px] font-bold ${occ?"bg-white/20 opacity-40":"bg-emerald-400 text-black"}`}>{n}</div>})}</div>
-                <button disabled={left===0} onClick={()=>{setSelectedSumo(sumo); setStep("seats");}} className="mt-3 w-full h-11 rounded-full bg-white text-[#0B1E3A] font-black disabled:opacity-30">BOOK NOW -></button>
+                <button disabled={left===0} onClick={()=>{setSelectedSumo(sumo); setStep("seats");}} className="mt-3 w-full h-11 rounded-full bg-white text-[#0B1E3A] font-black disabled:opacity-30">BOOK NOW  to </button>
               </div>
             )
           })}
@@ -139,7 +139,7 @@ export default function App() {
               </div>
               <div className="mt-5 flex items-center justify-between">
                 <div className="text-sm">Seats: <b>{selectedSeats.length? selectedSeats.join(","):"—"}</b> • Total: <b>₹{total}</b></div>
-                <button disabled={!selectedSeats.length} onClick={()=>setStep("details")} className="px-6 h-11 rounded-full bg-white text-[#0B1E3A] font-black disabled:opacity-30">Next -></button>
+                <button disabled={!selectedSeats.length} onClick={()=>setStep("details")} className="px-6 h-11 rounded-full bg-white text-[#0B1E3A] font-black disabled:opacity-30">Next  to </button>
               </div>
             </div>
           )}
@@ -150,7 +150,7 @@ export default function App() {
               <div className="space-y-3">
                 <div className="flex gap-2"><div className="flex-1 glass rounded-xl px-3 h-12 flex items-center gap-2"><User className="w-4 h-4 opacity-60"/><input value={name} onChange={e=>setName(e.target.value)} placeholder="Hming / Name" className="bg-transparent outline-none w-full text-sm"/></div></div>
                 <div className="glass rounded-xl px-3 h-12 flex items-center gap-2"><Phone className="w-4 h-4 opacity-60"/><input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Phone 9362600601" className="bg-transparent outline-none w-full text-sm"/></div>
-                <div className="glass rounded-xl p-3 text-sm">Sumo: {selectedSumo.id} • {selectedSumo.from}->{selectedSumo.to} • Seats: {selectedSeats.join(",")} • ₹{total}</div>
+                <div className="glass rounded-xl p-3 text-sm">Sumo: {selectedSumo.id} • {selectedSumo.from} to {selectedSumo.to} • Seats: {selectedSeats.join(",")} • ₹{total}</div>
                 <button disabled={!name || !phone} onClick={()=>setStep("pay")} className="w-full h-12 rounded-full bg-white text-[#0B1E3A] font-black disabled:opacity-30">Proceed to Pay ₹{total}</button>
               </div>
             </div>
@@ -189,8 +189,8 @@ export default function App() {
             <div className="glass-strong rounded-[24px] p-5">
               <h2 className="font-black mb-3 flex items-center gap-2"><MessageCircle className="w-5 h-5 text-[#25D366]"/> WhatsApp ah booking lang nghal!</h2>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-[16px] p-3 text-black text-[12px]"><div className="font-bold text-[10px] opacity-60 mb-1">Customer SMS</div>Your ticket {currentBookingId} confirmed! {selectedSumo.from}->{selectedSumo.to} Seats {selectedSeats.join(",")} ₹{total} • Kan lawm e!</div>
-                <div className="bg-[#0B3320] rounded-[16px] p-3 text-[12px] border border-[#25D366]/30"><div className="font-bold text-[10px] text-[#25D366] mb-1">Admin WhatsApp {whatsappNo}</div>🔥 NEW BOOKING<br/>{name} • {phone}<br/>{selectedSumo.from}->{selectedSumo.to} • {selectedSumo.id}<br/>Seats:{selectedSeats.join(",")} ₹{total}<br/>UTR:{utr}<br/>UPI:{upiId}</div>
+                <div className="bg-white rounded-[16px] p-3 text-black text-[12px]"><div className="font-bold text-[10px] opacity-60 mb-1">Customer SMS</div>Your ticket {currentBookingId} confirmed! {selectedSumo.from} to {selectedSumo.to} Seats {selectedSeats.join(",")} ₹{total} • Kan lawm e!</div>
+                <div className="bg-[#0B3320] rounded-[16px] p-3 text-[12px] border border-[#25D366]/30"><div className="font-bold text-[10px] text-[#25D366] mb-1">Admin WhatsApp {whatsappNo}</div>🔥 NEW BOOKING<br/>{name} • {phone}<br/>{selectedSumo.from} to {selectedSumo.to} • {selectedSumo.id}<br/>Seats: {selectedSeats.join(",")} ₹{total}<br/>UTR:{utr}<br/>UPI:{upiId}</div>
               </div>
               <div className="mt-3 text-[11px] opacity-70 text-center">Client te hriat thiamna tur - Scan chiah WhatsApp a lut nghal!</div>
             </div>
@@ -203,7 +203,7 @@ export default function App() {
               <div className="mt-3 glass rounded-xl p-3 text-left text-sm space-y-1">
                 <div className="flex justify-between"><span>Booking ID</span><b>{currentBookingId}</b></div>
                 <div className="flex justify-between"><span>Sumo</span><b>{selectedSumo.id} {selectedSumo.time}</b></div>
-                <div className="flex justify-between"><span>Route</span><b>{selectedSumo.from}->{selectedSumo.to}</b></div>
+                <div className="flex justify-between"><span>Route</span><b>{selectedSumo.from} to {selectedSumo.to}</b></div>
                 <div className="flex justify-between"><span>Seats</span><b>{selectedSeats.join(",")}</b></div>
                 <div className="flex justify-between"><span>Total</span><b>₹{total}</b></div>
                 <div className="flex justify-between"><span>UTR</span><b className="font-mono text-[12px]">{utr}</b></div>
@@ -234,10 +234,10 @@ export default function App() {
                 <label className="block"><span className="text-[11px] opacity-60">UPI ID</span><input value={upiId} onChange={e=>setUpiId(e.target.value)} className="w-full mt-1 h-10 rounded-xl bg-white text-[#0B1E3A] px-3 font-bold text-[13px]"/></label>
                 <label className="block"><span className="text-[11px] opacity-60">WhatsApp No</span><input value={whatsappNo} onChange={e=>setWhatsappNo(e.target.value)} className="w-full mt-1 h-10 rounded-xl bg-white text-[#0B1E3A] px-3 font-bold text-[13px]"/></label>
                 <div className="space-y-2 max-h-[200px] overflow-auto">
-                  {sumos.map(s=><div key={s.id} className="glass rounded-xl p-2 flex justify-between text-[11px]"><span>{s.id} {s.from}->{s.to} ₹{s.fare} {10-s.occupied.length} left</span><button onClick={()=>setSumos(sumos.filter(x=>x.id!==s.id))} className="text-red-300"><Trash2 className="w-3 h-3"/></button></div>)}
+                  {sumos.map(s=><div key={s.id} className="glass rounded-xl p-2 flex justify-between text-[11px]"><span>{s.id} {s.from} to {s.to} Rs.{s.fare} {10-s.occupied.length} left</span><button onClick={()=>setSumos(sumos.filter(x=>x.id!==s.id))} className="text-red-300"><Trash2 className="w-3 h-3"/></button></div>)}
                 </div>
                 <button onClick={()=>{const id=`SA-${Math.floor(Math.random()*24).toString().padStart(2,"0")}-${Math.floor(Math.random()*60).toString().padStart(2,"0")}`; setSumos([...sumos,{id,time:"07:30 AM",from:"Saiha",to:"Aizawl",driver:"New Driver",fare:700,occupied:[],status:"filling"}])}} className="w-full h-9 rounded-full bg-white/10 font-bold text-[11px] flex items-center justify-center gap-1"><Plus className="w-3 h-3"/> Add Sumo</button>
-                <div className="pt-2 border-t border-white/10 text-[11px]"><div className="font-bold mb-1">Bookings {bookings.length}</div>{bookings.map(b=><div key={b.id} className="glass rounded-lg p-2 mb-1"><div className="flex justify-between"><span>{b.id}</span><span>₹{b.total}</span></div><div className="opacity-60">{b.name} S{b.seats.join(",")} {b.phone}</div></div>)}</div>
+                <div className="pt-2 border-t border-white/10 text-[11px]"><div className="font-bold mb-1">Bookings {bookings.length}</div>{bookings.map(b=><div key={b.id} className="glass rounded-lg p-2 mb-1"><div className="flex justify-between"><span>{b.id}</span><span>₹{b.total}</span></div><div className="opacity-60">{b.name} Seats {b.seats.join(",")} {b.phone}</div></div>)}</div>
               </div>
             )}
           </div>
